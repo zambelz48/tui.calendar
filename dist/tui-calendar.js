@@ -1,6 +1,6 @@
 /*!
  * TOAST UI Calendar
- * @version 1.7.0 | Mon Sep 10 2018
+ * @version 1.8.0-sp84 | Tue Sep 11 2018
  * @author NHNEnt FE Development Lab <dl_javascript@nhnent.com>
  * @license MIT
  */
@@ -7540,7 +7540,7 @@ var array = __webpack_require__(/*! ../../common/array */ "./src/js/common/array
 var datetime = __webpack_require__(/*! ../../common/datetime */ "./src/js/common/datetime.js");
 var TZDate = __webpack_require__(/*! ../../common/timezone */ "./src/js/common/timezone.js").Date;
 
-var MILLISECONDS_SCHEDULE_MIN_DURATION = datetime.MILLISECONDS_SCHEDULE_MIN_DURATION;
+var SCHEDULE_MIN_DURATION = datetime.MILLISECONDS_SCHEDULE_MIN_DURATION;
 
 /**
  * @mixin Base.Week
@@ -7560,6 +7560,8 @@ var Week = {
         var row,
             col,
             schedule,
+            start,
+            end,
             map = [],
             cursor = [],
             maxColLen = Math.max.apply(null, util.map(matrix, function(col) {
@@ -7571,7 +7573,14 @@ var Week = {
             schedule = util.pick(matrix, row, col);
 
             while (schedule) {
-                cursor.push([schedule.getStarts().getTime(), schedule.getEnds().getTime()]);
+                start = schedule.getStarts().getTime() - datetime.millisecondsFrom('minutes', schedule.valueOf().goingDuration);
+                end = schedule.getEnds().getTime() + datetime.millisecondsFrom('minutes', schedule.valueOf().comingDuration);
+
+                if (Math.abs(end - start) < SCHEDULE_MIN_DURATION) {
+                    end += SCHEDULE_MIN_DURATION;
+                }
+
+                cursor.push([start, end]);
 
                 row += 1;
                 schedule = util.pick(matrix, row, col);
@@ -7648,9 +7657,12 @@ var Week = {
                     startTime = viewModel.getStarts().getTime();
                     endTime = viewModel.getEnds().getTime();
 
-                    if (Math.abs(endTime - startTime) < MILLISECONDS_SCHEDULE_MIN_DURATION) {
-                        endTime += MILLISECONDS_SCHEDULE_MIN_DURATION;
+                    if (Math.abs(endTime - startTime) < SCHEDULE_MIN_DURATION) {
+                        endTime += SCHEDULE_MIN_DURATION;
                     }
+
+                    startTime -= datetime.millisecondsFrom('minutes', viewModel.valueOf().goingDuration);
+                    endTime += datetime.millisecondsFrom('minutes', viewModel.valueOf().comingDuration);
 
                     endTime -= 1;
 
@@ -7943,6 +7955,8 @@ var mmin = Math.min;
  * @property {string} title - schedule title
  * @property {string|TZDate} start - start time. It's 'string' for input. It's 'TZDate' for output like event handler.
  * @property {string|TZDate} end - end time. It's 'string' for input. It's 'TZDate' for output like event handler.
+ * @property {number} goingDuration - travel time:  going duration
+ * @property {number} comingDuration - travel time: coming duration
  * @property {boolean} isAllDay - all day schedule
  * @property {string} category - schedule type('milestone', 'task', allday', 'time')
  * @property {string} dueDateClass - task schedule type string
@@ -15876,6 +15890,10 @@ var FloatingLayer = __webpack_require__(/*! ../../common/floatingLayer */ "./src
 var tmpl = __webpack_require__(/*! ../../view/template/week/timeMoveGuide.hbs */ "./src/js/view/template/week/timeMoveGuide.hbs");
 var TZDate = __webpack_require__(/*! ../../common/timezone */ "./src/js/common/timezone.js").Date;
 var Schedule = __webpack_require__(/*! ../../model/schedule */ "./src/js/model/schedule.js");
+var datetime = __webpack_require__(/*! ../../common/datetime */ "./src/js/common/datetime.js");
+var common = __webpack_require__(/*! ../../common/common */ "./src/js/common/common.js");
+
+var SCHEDULE_MIN_DURATION = datetime.MILLISECONDS_SCHEDULE_MIN_DURATION;
 
 /**
  * Class for Time.Move effect.
@@ -15892,6 +15910,11 @@ function TimeMoveGuide(timeMove) {
      * @Type {Schedule}
      */
     this._model = null;
+
+    /**
+     * @type {object}
+     */
+    this._viewModel = null;
 
     /**
      * @type {object}
@@ -15946,7 +15969,7 @@ TimeMoveGuide.prototype.destroy = function() {
         this._guideLayer.destroy();
     }
     this.guideElement = this.timeMove = this._container = this._guideLayer = this._lastDrag =
-        this._getTopFunc = this._startGridY = this._startTopPixel = null;
+        this._getTopFunc = this._startGridY = this._startTopPixel = this._viewModel = null;
 };
 
 /**
@@ -15963,7 +15986,7 @@ TimeMoveGuide.prototype._clearGuideElement = function() {
     this._showOriginScheduleBlocks();
 
     this.guideElement = this._getTopFunc = this._guideLayer = this._model = this._lastDrag =
-        this._startGridY = this._startTopPixel = null;
+        this._startGridY = this._startTopPixel = this._viewModel = null;
 };
 
 /**
@@ -15991,8 +16014,9 @@ TimeMoveGuide.prototype._showOriginScheduleBlocks = function() {
  * Refresh guide element
  * @param {string} top - guide element's style top.
  * @param {Schedule} model - updated model
+ * @param {object} viewModel - view model
  */
-TimeMoveGuide.prototype._refreshGuideElement = function(top, model) {
+TimeMoveGuide.prototype._refreshGuideElement = function(top, model, viewModel) {
     var self = this;
 
     reqAnimFrame.requestAnimFrame(function() {
@@ -16000,7 +16024,7 @@ TimeMoveGuide.prototype._refreshGuideElement = function(top, model) {
             return;
         }
         self._guideLayer.setPosition(0, top);
-        self._guideLayer.setContent(tmpl({model: model}));
+        self._guideLayer.setContent(tmpl(util.extend({model: model}, viewModel)));
     });
 };
 
@@ -16013,6 +16037,7 @@ TimeMoveGuide.prototype._onDragStart = function(dragStartEventData) {
         dragStartEventData.target,
         config.classname('.time-date-schedule-block')
     );
+    var duration, modelDuration, goingDuration, comingDuration;
 
     if (!guideElement) {
         return;
@@ -16027,7 +16052,21 @@ TimeMoveGuide.prototype._onDragStart = function(dragStartEventData) {
         Schedule.create(dragStartEventData.model),
         dragStartEventData.model
     );
+
+    modelDuration = this._model.duration().getTime();
+    modelDuration = modelDuration > SCHEDULE_MIN_DURATION ? modelDuration : SCHEDULE_MIN_DURATION;
+    goingDuration = datetime.millisecondsFrom('minutes', this._model.goingDuration);
+    comingDuration = datetime.millisecondsFrom('minutes', this._model.comingDuration);
+    duration = goingDuration + modelDuration + comingDuration;
+
     this._lastDrag = dragStartEventData;
+    this._viewModel = {
+        hasGoingDuration: goingDuration > 0,
+        hasComingDuration: comingDuration > 0,
+        goingDurationHeight: common.ratio(duration, goingDuration, 100),
+        modelDurationHeight: common.ratio(duration, modelDuration, 100),
+        comingDurationHeight: common.ratio(duration, comingDuration, 100)
+    };
 
     this._resetGuideLayer();
     this._hideOriginScheduleBlocks();
@@ -16069,7 +16108,7 @@ TimeMoveGuide.prototype._onDrag = function(dragEventData) {
     this._model.end = new TZDate(this._model.getEnds().getTime() + timeDiff);
     this._lastDrag = dragEventData;
 
-    this._refreshGuideElement(top, this._model);
+    this._refreshGuideElement(top, this._model, this._viewModel);
 };
 
 TimeMoveGuide.prototype._resetGuideLayer = function() {
@@ -16080,7 +16119,7 @@ TimeMoveGuide.prototype._resetGuideLayer = function() {
     this._guideLayer = new FloatingLayer(null, this._container);
     this._guideLayer.setSize(this._container.getBoundingClientRect().width, this.guideElement.style.height);
     this._guideLayer.setPosition(0, this.guideElement.style.top);
-    this._guideLayer.setContent(tmpl({model: this._model}));
+    this._guideLayer.setContent(tmpl(util.extend({model: this._model}, this._viewModel)));
     this._guideLayer.show();
 };
 
@@ -16200,6 +16239,8 @@ TimeResize.prototype._onDragStart = function(dragStartEventData) {
     var target = dragStartEventData.target,
         timeView = this.checkExpectCondition(target),
         blockElement = domutil.closest(target, config.classname('.time-date-schedule-block')),
+        ctrl = this.baseController,
+        targetModelID,
         getScheduleDataFunc,
         scheduleData;
 
@@ -16207,10 +16248,12 @@ TimeResize.prototype._onDragStart = function(dragStartEventData) {
         return;
     }
 
+    targetModelID = domutil.getData(blockElement, 'id');
     getScheduleDataFunc = this._getScheduleDataFunc = this._retriveScheduleData(timeView);
     scheduleData = this._dragStart = getScheduleDataFunc(
         dragStartEventData.originEvent, {
-            targetModelID: domutil.getData(blockElement, 'id')
+            targetModelID: targetModelID,
+            schedule: ctrl.schedules.items[targetModelID]
         }
     );
 
@@ -16232,6 +16275,7 @@ TimeResize.prototype._onDragStart = function(dragStartEventData) {
      * @property {number} nearestGridY - nearest grid index related with mouseY value.
      * @property {number} nearestGridTimeY - time value for nearestGridY.
      * @property {string} targetModelID - The model unique id emitted move schedule.
+     * @property {Schedule} schedule - schedule data
      */
     this.fire('timeResizeDragstart', scheduleData);
 };
@@ -16424,6 +16468,7 @@ var config = __webpack_require__(/*! ../../config */ "./src/js/config.js");
 var domutil = __webpack_require__(/*! ../../common/domutil */ "./src/js/common/domutil.js");
 var reqAnimFrame = __webpack_require__(/*! ../../common/reqAnimFrame */ "./src/js/common/reqAnimFrame.js");
 var ratio = __webpack_require__(/*! ../../common/common */ "./src/js/common/common.js").ratio;
+var datetime = __webpack_require__(/*! ../../common/datetime */ "./src/js/common/datetime.js");
 
 /**
  * Class for Time.Resize effect.
@@ -16465,6 +16510,11 @@ function TimeResizeGuide(timeResize) {
      * @type {number}
      */
     this._startGridY = 0;
+
+    /**
+     * @type {Schedule}
+     */
+    this._schedule = null;
 
     timeResize.on({
         'timeResizeDragstart': this._onDragStart,
@@ -16508,18 +16558,28 @@ TimeResizeGuide.prototype._clearGuideElement = function() {
 
 /**
  * Refresh guide element
- * @param {string} height - guide element's style height.
+ * @param {number} guideHeight - guide element's style height.
+ * @param {number} minTimeHeight - time element's min height
+ * @param {number} timeHeight - time element's height.
  */
-TimeResizeGuide.prototype._refreshGuideElement = function(height) {
+TimeResizeGuide.prototype._refreshGuideElement = function(guideHeight, minTimeHeight, timeHeight) {
     var guideElement = this.guideElement;
+    var timeElement;
 
     if (!guideElement) {
         return;
     }
 
+    timeElement = domutil.find(config.classname('.time-schedule-content-time'), guideElement);
+
     reqAnimFrame.requestAnimFrame(function() {
-        guideElement.style.height = height + 'px';
+        guideElement.style.height = guideHeight + 'px';
         guideElement.style.display = 'block';
+
+        if (timeElement) {
+            timeElement.style.height = timeHeight + 'px';
+            timeElement.style.minHeight = minTimeHeight + 'px';
+        }
     });
 };
 
@@ -16532,13 +16592,14 @@ TimeResizeGuide.prototype._onDragStart = function(dragStartEventData) {
             dragStartEventData.target,
             config.classname('.time-date-schedule-block')
         ),
+        schedule = dragStartEventData.schedule,
         guideElement;
 
     if (!util.browser.msie) {
         domutil.addClass(global.document.body, config.classname('resizing'));
     }
 
-    if (!originElement) {
+    if (!originElement || !schedule) {
         return;
     }
 
@@ -16547,6 +16608,8 @@ TimeResizeGuide.prototype._onDragStart = function(dragStartEventData) {
     this._startTopPixel = parseFloat(originElement.style.top);
 
     this._originScheduleElement = originElement;
+    this._schedule = schedule;
+
     guideElement = this.guideElement = originElement.cloneNode(true);
     domutil.addClass(guideElement, config.classname('time-guide-resize'));
 
@@ -16567,6 +16630,12 @@ TimeResizeGuide.prototype._onDrag = function(dragEventData) {
         gridYOffset = dragEventData.nearestGridY - this._startGridY,
         // hourLength : viewHeight = gridYOffset : X;
         gridYOffsetPixel = ratio(hourLength, viewHeight, gridYOffset),
+        goingDuration = this._schedule.goingDuration,
+        modelDuration = this._schedule.duration().getTime() / datetime.MILLISECONDS_PER_MINUTES,
+        comingDuration = this._schedule.comingDuration,
+        minutesLength = hourLength * 60,
+        timeHeight,
+        timeMinHeight,
         minHeight,
         maxHeight,
         height;
@@ -16575,13 +16644,17 @@ TimeResizeGuide.prototype._onDrag = function(dragEventData) {
     // at least large than 30min from schedule start time.
     minHeight = guideTop + ratio(hourLength, viewHeight, 0.5);
     minHeight -= this._startTopPixel;
+    timeMinHeight = minHeight;
+    minHeight += ratio(minutesLength, viewHeight, goingDuration) + ratio(minutesLength, viewHeight, comingDuration);
     // smaller than 24h
     maxHeight = viewHeight - guideTop;
 
     height = Math.max(height, minHeight);
     height = Math.min(height, maxHeight);
 
-    this._refreshGuideElement(height);
+    timeHeight = ratio(minutesLength, viewHeight, modelDuration) + gridYOffsetPixel;
+
+    this._refreshGuideElement(height, timeMinHeight, timeHeight);
 };
 
 module.exports = TimeResizeGuide;
@@ -16611,6 +16684,8 @@ var TZDate = __webpack_require__(/*! ../common/timezone */ "./src/js/common/time
 var datetime = __webpack_require__(/*! ../common/datetime */ "./src/js/common/datetime.js");
 var dirty = __webpack_require__(/*! ../common/dirty */ "./src/js/common/dirty.js");
 var model = __webpack_require__(/*! ../common/model */ "./src/js/common/model.js");
+
+var SCHEDULE_MIN_DURATION = datetime.MILLISECONDS_SCHEDULE_MIN_DURATION;
 
 /**
  * Schedule category
@@ -16771,6 +16846,18 @@ function Schedule() {
     this.state = '';
 
     /**
+     * travelTime: going-Duration minutes
+     * @type {number}
+     */
+    this.goingDuration = 0;
+
+    /**
+     * travelTime: coming-Duration minutes
+     * @type {number}
+     */
+    this.comingDuration = 0;
+
+    /**
      * Separate data storage space independent of rendering.
      * @type {object}
      */
@@ -16835,6 +16922,8 @@ Schedule.prototype.init = function(options) {
     this.isPending = options.isPending || false;
     this.isFocused = options.isFocused || false;
     this.isReadOnly = options.isReadOnly || false;
+    this.goingDuration = options.goingDuration || 0;
+    this.comingDuration = options.comingDuration || 0;
 
     if (this.isAllDay) {
         this.setAllDayPeriod(options.start, options.end);
@@ -16969,6 +17058,23 @@ Schedule.prototype.collidesWith = function(schedule) {
         ownEnds = this.getEnds(),
         start = schedule.getStarts(),
         end = schedule.getEnds();
+    var ownGoingDuration = datetime.millisecondsFrom('minutes', this.goingDuration),
+        ownComingDuration = datetime.millisecondsFrom('minutes', this.comingDuration),
+        goingDuration = datetime.millisecondsFrom('minutes', schedule.goingDuration),
+        comingDuration = datetime.millisecondsFrom('minutes', schedule.comingDuration);
+
+    if (Math.abs(ownEnds - ownStarts) < SCHEDULE_MIN_DURATION) {
+        ownEnds += SCHEDULE_MIN_DURATION;
+    }
+
+    if (Math.abs(end - start) < SCHEDULE_MIN_DURATION) {
+        end += SCHEDULE_MIN_DURATION;
+    }
+
+    ownStarts -= ownGoingDuration;
+    ownEnds += ownComingDuration;
+    start -= goingDuration;
+    end += comingDuration;
 
     if ((start > ownStarts && start < ownEnds) ||
         (end > ownStarts && end < ownEnds) ||
@@ -17004,7 +17110,7 @@ module.exports = Schedule;
 var util = __webpack_require__(/*! tui-code-snippet */ "tui-code-snippet");
 var datetime = __webpack_require__(/*! ../../common/datetime */ "./src/js/common/datetime.js");
 
-var MILLISECONDS_SCHEDULE_MIN_DURATION = datetime.MILLISECONDS_SCHEDULE_MIN_DURATION;
+var SCHEDULE_MIN_DURATION = datetime.MILLISECONDS_SCHEDULE_MIN_DURATION;
 
 /**
  * Schedule ViewModel
@@ -17174,14 +17280,27 @@ ScheduleViewModel.prototype.collidesWith = function(viewModel) {
         ownEnds = this.getEnds(),
         start = viewModel.getStarts(),
         end = viewModel.getEnds();
+    var ownGoingDuration = datetime.millisecondsFrom('minutes', this.valueOf().goingDuration),
+        ownComingDuration = datetime.millisecondsFrom('minutes', this.valueOf().comingDuration),
+        goingDuration = datetime.millisecondsFrom('minutes', viewModel.valueOf().goingDuration),
+        comingDuration = datetime.millisecondsFrom('minutes', viewModel.valueOf().comingDuration);
+
+    if (Math.abs(ownEnds - ownStarts) < SCHEDULE_MIN_DURATION) {
+        ownEnds += SCHEDULE_MIN_DURATION;
+    }
+
+    if (Math.abs(end - start) < SCHEDULE_MIN_DURATION) {
+        end += SCHEDULE_MIN_DURATION;
+    }
+
+    ownStarts -= ownGoingDuration;
+    ownEnds += ownComingDuration;
+    start -= goingDuration;
+    end += comingDuration;
 
     if ((start > ownStarts && start < ownEnds) ||
         (end > ownStarts && end < ownEnds) ||
         (start <= ownStarts && end >= ownEnds)) {
-        return true;
-    }
-
-    if (Math.abs(start - ownStarts) < MILLISECONDS_SCHEDULE_MIN_DURATION) {
         return true;
     }
 
@@ -19410,10 +19529,13 @@ ScheduleDetailPopup.prototype._setPopupPositionAndArrowDirection = function(even
         top: parentRect.top
     };
     var scheduleEl = event.target || event.srcElement;
-    var scheduleBound = scheduleEl.getBoundingClientRect();
+    var blockEl = domutil.closest(scheduleEl, config.classname('.time-date-schedule-block'))
+        || domutil.closest(scheduleEl, config.classname('.weekday-schedule'))
+        || scheduleEl;
+    var scheduleBound = blockEl.getBoundingClientRect();
     var pos;
 
-    this._scheduleEl = scheduleEl;
+    this._scheduleEl = blockEl;
 
     pos = this._calcRenderingData(layerSize, windowSize, scheduleBound);
     pos.x -= parentBounds.left + 4;
@@ -19827,6 +19949,22 @@ Handlebars.registerHelper({
         return common.stripTags(model.title);
     },
 
+    'goingDuration-tmpl': function(model) {
+        var goingDuration = model.goingDuration;
+        var hour = parseInt(goingDuration / SIXTY_MINUTES, 10);
+        var minutes = goingDuration % SIXTY_MINUTES;
+
+        return 'Travel Time ' + datetime.leadingZero(hour, 2) + ':' + datetime.leadingZero(minutes, 2);
+    },
+
+    'comingDuration-tmpl': function(model) {
+        var goingDuration = model.goingDuration;
+        var hour = parseInt(goingDuration / SIXTY_MINUTES, 10);
+        var minutes = goingDuration % SIXTY_MINUTES;
+
+        return 'Travel Time ' + datetime.leadingZero(hour, 2) + ':' + datetime.leadingZero(minutes, 2);
+    },
+
     'monthMoreTitleDate-tmpl': function(date, dayname) {
         var classDay = config.classname('month-more-title-day');
         var classDayLabel = config.classname('month-more-title-day-label');
@@ -19972,7 +20110,7 @@ Handlebars.registerHelper({
         if (util.isUndefined(displayLabel)) {
             gmt = timezoneOffset < 0 ? '-' : '+';
             hour = Math.abs(parseInt(timezoneOffset / SIXTY_MINUTES, 10));
-            minutes = Math.abs(timezoneOffset % 60);
+            minutes = Math.abs(timezoneOffset % SIXTY_MINUTES);
             displayLabel = gmt + datetime.leadingZero(hour, 2) + ':' + datetime.leadingZero(minutes, 2);
         }
 
@@ -21427,10 +21565,24 @@ module.exports = (Handlebars['default'] || Handlebars).template({"1":function(co
     + ((stack1 = helpers["if"].call(alias1,((stack1 = (depth0 != null ? depth0.model : depth0)) != null ? stack1.isFocused : stack1),{"name":"if","hash":{},"fn":container.program(15, data, 0),"inverse":container.program(17, data, 0),"data":data})) != null ? stack1 : "")
     + "                 "
     + alias4(alias5(((stack1 = (depth0 != null ? depth0.model : depth0)) != null ? stack1.customStyle : stack1), depth0))
-    + "\"\n            >"
+    + "\"\n            >\n"
+    + ((stack1 = helpers["if"].call(alias1,(depth0 != null ? depth0.hasGoingDuration : depth0),{"name":"if","hash":{},"fn":container.program(19, data, 0),"inverse":container.noop,"data":data})) != null ? stack1 : "")
+    + "                <div class=\""
+    + alias4(((helper = (helper = helpers.CSS_PREFIX || (depth0 != null ? depth0.CSS_PREFIX : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"CSS_PREFIX","hash":{},"data":data}) : helper)))
+    + "time-schedule-content "
+    + alias4(((helper = (helper = helpers.CSS_PREFIX || (depth0 != null ? depth0.CSS_PREFIX : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"CSS_PREFIX","hash":{},"data":data}) : helper)))
+    + "time-schedule-content-time\" style=\"height: "
+    + alias4(((helper = (helper = helpers.modelDurationHeight || (depth0 != null ? depth0.modelDurationHeight : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"modelDurationHeight","hash":{},"data":data}) : helper)))
+    + "px;\n"
+    + ((stack1 = helpers["if"].call(alias1,((stack1 = (depth0 != null ? depth0.model : depth0)) != null ? stack1.isFocused : stack1),{"name":"if","hash":{},"fn":container.program(20, data, 0),"inverse":container.program(22, data, 0),"data":data})) != null ? stack1 : "")
+    + "                "
+    + ((stack1 = helpers["if"].call(alias1,(depth0 != null ? depth0.hasComingDuration : depth0),{"name":"if","hash":{},"fn":container.program(24, data, 0),"inverse":container.noop,"data":data})) != null ? stack1 : "")
+    + "\">\n                    "
     + ((stack1 = (helpers["time-tmpl"] || (depth0 && depth0["time-tmpl"]) || alias2).call(alias1,(depth0 != null ? depth0.model : depth0),{"name":"time-tmpl","hash":{},"data":data})) != null ? stack1 : "")
-    + "</div>\n            "
-    + ((stack1 = helpers.unless.call(alias1,(depth0 != null ? depth0.croppedEnd : depth0),{"name":"unless","hash":{},"fn":container.program(19, data, 0),"inverse":container.noop,"data":data})) != null ? stack1 : "")
+    + "\n                </div>\n"
+    + ((stack1 = helpers["if"].call(alias1,(depth0 != null ? depth0.hasComingDuration : depth0),{"name":"if","hash":{},"fn":container.program(26, data, 0),"inverse":container.noop,"data":data})) != null ? stack1 : "")
+    + "            </div>\n            "
+    + ((stack1 = helpers.unless.call(alias1,(depth0 != null ? depth0.croppedEnd : depth0),{"name":"unless","hash":{},"fn":container.program(29, data, 0),"inverse":container.noop,"data":data})) != null ? stack1 : "")
     + "\n        </div>\n";
 },"5":function(container,depth0,helpers,partials,data) {
     var helper;
@@ -21484,6 +21636,56 @@ module.exports = (Handlebars['default'] || Handlebars).template({"1":function(co
     + alias2(alias1(((stack1 = (depth0 != null ? depth0.model : depth0)) != null ? stack1.borderColor : stack1), depth0))
     + ";\n";
 },"19":function(container,depth0,helpers,partials,data) {
+    var stack1, helper, alias1=depth0 != null ? depth0 : (container.nullContext || {}), alias2=helpers.helperMissing, alias3="function", alias4=container.escapeExpression;
+
+  return "                <div class=\""
+    + alias4(((helper = (helper = helpers.CSS_PREFIX || (depth0 != null ? depth0.CSS_PREFIX : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"CSS_PREFIX","hash":{},"data":data}) : helper)))
+    + "time-schedule-content\" style=\"height: "
+    + alias4(((helper = (helper = helpers.goingDurationHeight || (depth0 != null ? depth0.goingDurationHeight : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"goingDurationHeight","hash":{},"data":data}) : helper)))
+    + "px;\n"
+    + ((stack1 = helpers["if"].call(alias1,((stack1 = (depth0 != null ? depth0.model : depth0)) != null ? stack1.isFocused : stack1),{"name":"if","hash":{},"fn":container.program(20, data, 0),"inverse":container.program(22, data, 0),"data":data})) != null ? stack1 : "")
+    + "                border-bottom: 1px solid "
+    + alias4(((helper = (helper = helpers.travelBorderColor || (depth0 != null ? depth0.travelBorderColor : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"travelBorderColor","hash":{},"data":data}) : helper)))
+    + ";\">"
+    + ((stack1 = (helpers["goingDuration-tmpl"] || (depth0 && depth0["goingDuration-tmpl"]) || alias2).call(alias1,(depth0 != null ? depth0.model : depth0),{"name":"goingDuration-tmpl","hash":{},"data":data})) != null ? stack1 : "")
+    + "</div>\n";
+},"20":function(container,depth0,helpers,partials,data) {
+    var stack1;
+
+  return "                    border-color:"
+    + container.escapeExpression(container.lambda(((stack1 = (depth0 != null ? depth0.model : depth0)) != null ? stack1.color : stack1), depth0))
+    + ";\n";
+},"22":function(container,depth0,helpers,partials,data) {
+    var stack1;
+
+  return "                    border-color:"
+    + container.escapeExpression(container.lambda(((stack1 = (depth0 != null ? depth0.model : depth0)) != null ? stack1.borderColor : stack1), depth0))
+    + ";\n";
+},"24":function(container,depth0,helpers,partials,data) {
+    var helper;
+
+  return "border-bottom: 1px solid "
+    + container.escapeExpression(((helper = (helper = helpers.travelBorderColor || (depth0 != null ? depth0.travelBorderColor : depth0)) != null ? helper : helpers.helperMissing),(typeof helper === "function" ? helper.call(depth0 != null ? depth0 : (container.nullContext || {}),{"name":"travelBorderColor","hash":{},"data":data}) : helper)))
+    + ";";
+},"26":function(container,depth0,helpers,partials,data) {
+    var stack1, helper, alias1=depth0 != null ? depth0 : (container.nullContext || {}), alias2=helpers.helperMissing, alias3="function", alias4=container.escapeExpression;
+
+  return "                <div class=\""
+    + alias4(((helper = (helper = helpers.CSS_PREFIX || (depth0 != null ? depth0.CSS_PREFIX : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"CSS_PREFIX","hash":{},"data":data}) : helper)))
+    + "time-schedule-content\" style=\"height: "
+    + alias4(((helper = (helper = helpers.comingDurationHeight || (depth0 != null ? depth0.comingDurationHeight : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"comingDurationHeight","hash":{},"data":data}) : helper)))
+    + "px;\n"
+    + ((stack1 = helpers["if"].call(alias1,((stack1 = (depth0 != null ? depth0.model : depth0)) != null ? stack1.isFocused : stack1),{"name":"if","hash":{},"fn":container.program(20, data, 0),"inverse":container.program(27, data, 0),"data":data})) != null ? stack1 : "")
+    + ";\">"
+    + ((stack1 = (helpers["comingDuration-tmpl"] || (depth0 && depth0["comingDuration-tmpl"]) || alias2).call(alias1,(depth0 != null ? depth0.model : depth0),{"name":"comingDuration-tmpl","hash":{},"data":data})) != null ? stack1 : "")
+    + "</div>\n";
+},"27":function(container,depth0,helpers,partials,data) {
+    var stack1;
+
+  return "                    border-color:"
+    + container.escapeExpression(container.lambda(((stack1 = (depth0 != null ? depth0.model : depth0)) != null ? stack1.borderColor : stack1), depth0))
+    + ";\n                ";
+},"29":function(container,depth0,helpers,partials,data) {
     var stack1, helper, alias1=container.escapeExpression;
 
   return "<div class=\""
@@ -21716,6 +21918,34 @@ module.exports = (Handlebars['default'] || Handlebars).template({"1":function(co
 
 var Handlebars = __webpack_require__(/*! ./node_modules/handlebars/runtime.js */ "./node_modules/handlebars/runtime.js");
 module.exports = (Handlebars['default'] || Handlebars).template({"1":function(container,depth0,helpers,partials,data) {
+    var stack1, helper, alias1=depth0 != null ? depth0 : (container.nullContext || {}), alias2=helpers.helperMissing, alias3="function", alias4=container.escapeExpression, alias5=container.lambda;
+
+  return "            <div class=\""
+    + alias4(((helper = (helper = helpers.CSS_PREFIX || (depth0 != null ? depth0.CSS_PREFIX : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"CSS_PREFIX","hash":{},"data":data}) : helper)))
+    + "time-schedule-content\" style=\"border-color:"
+    + alias4(alias5(((stack1 = (depth0 != null ? depth0.model : depth0)) != null ? stack1.borderColor : stack1), depth0))
+    + "; border-bottom: 1px solid "
+    + alias4(alias5(((stack1 = (depth0 != null ? depth0.model : depth0)) != null ? stack1.color : stack1), depth0))
+    + "; height: "
+    + alias4(((helper = (helper = helpers.goingDurationHeight || (depth0 != null ? depth0.goingDurationHeight : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"goingDurationHeight","hash":{},"data":data}) : helper)))
+    + "%;\">"
+    + ((stack1 = (helpers["goingDuration-tmpl"] || (depth0 && depth0["goingDuration-tmpl"]) || alias2).call(alias1,(depth0 != null ? depth0.model : depth0),{"name":"goingDuration-tmpl","hash":{},"data":data})) != null ? stack1 : "")
+    + "</div>\n";
+},"3":function(container,depth0,helpers,partials,data) {
+    var stack1, helper, alias1=depth0 != null ? depth0 : (container.nullContext || {}), alias2=helpers.helperMissing, alias3="function", alias4=container.escapeExpression, alias5=container.lambda;
+
+  return "            <div class=\""
+    + alias4(((helper = (helper = helpers.CSS_PREFIX || (depth0 != null ? depth0.CSS_PREFIX : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"CSS_PREFIX","hash":{},"data":data}) : helper)))
+    + "time-schedule-content\" style=\"border-color:"
+    + alias4(alias5(((stack1 = (depth0 != null ? depth0.model : depth0)) != null ? stack1.borderColor : stack1), depth0))
+    + "; border-top: 1px solid "
+    + alias4(alias5(((stack1 = (depth0 != null ? depth0.model : depth0)) != null ? stack1.color : stack1), depth0))
+    + "; height: "
+    + alias4(((helper = (helper = helpers.comingDurationHeight || (depth0 != null ? depth0.comingDurationHeight : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"comingDurationHeight","hash":{},"data":data}) : helper)))
+    + "%;\">"
+    + ((stack1 = (helpers["comingDuration-tmpl"] || (depth0 && depth0["comingDuration-tmpl"]) || alias2).call(alias1,(depth0 != null ? depth0.model : depth0),{"name":"comingDuration-tmpl","hash":{},"data":data})) != null ? stack1 : "")
+    + "</div>\n";
+},"5":function(container,depth0,helpers,partials,data) {
     var helper;
 
   return "<div class=\""
@@ -21734,12 +21964,20 @@ module.exports = (Handlebars['default'] || Handlebars).template({"1":function(co
     + alias4(((helper = (helper = helpers.CSS_PREFIX || (depth0 != null ? depth0.CSS_PREFIX : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"CSS_PREFIX","hash":{},"data":data}) : helper)))
     + "time-date-schedule-block-focused\" style=\"color: #ffffff; background-color:"
     + alias4(alias5(((stack1 = (depth0 != null ? depth0.model : depth0)) != null ? stack1.dragBgColor : stack1), depth0))
-    + "; border-color:"
+    + ";\">\n"
+    + ((stack1 = helpers["if"].call(alias1,(depth0 != null ? depth0.hasGoingDuration : depth0),{"name":"if","hash":{},"fn":container.program(1, data, 0),"inverse":container.noop,"data":data})) != null ? stack1 : "")
+    + "            <div class=\""
+    + alias4(((helper = (helper = helpers.CSS_PREFIX || (depth0 != null ? depth0.CSS_PREFIX : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"CSS_PREFIX","hash":{},"data":data}) : helper)))
+    + "time-schedule-content\" style=\"height: "
+    + alias4(((helper = (helper = helpers.modelDurationHeight || (depth0 != null ? depth0.modelDurationHeight : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"modelDurationHeight","hash":{},"data":data}) : helper)))
+    + "%; border-color:"
     + alias4(alias5(((stack1 = (depth0 != null ? depth0.model : depth0)) != null ? stack1.borderColor : stack1), depth0))
-    + ";\">"
+    + ";\">\n                "
     + ((stack1 = (helpers["time-tmpl"] || (depth0 && depth0["time-tmpl"]) || alias2).call(alias1,(depth0 != null ? depth0.model : depth0),{"name":"time-tmpl","hash":{},"data":data})) != null ? stack1 : "")
-    + "</div>\n    "
-    + ((stack1 = helpers.unless.call(alias1,(depth0 != null ? depth0.croppedEnd : depth0),{"name":"unless","hash":{},"fn":container.program(1, data, 0),"inverse":container.noop,"data":data})) != null ? stack1 : "")
+    + "\n            </div>\n"
+    + ((stack1 = helpers["if"].call(alias1,(depth0 != null ? depth0.hasComingDuration : depth0),{"name":"if","hash":{},"fn":container.program(3, data, 0),"inverse":container.noop,"data":data})) != null ? stack1 : "")
+    + "    </div>\n    "
+    + ((stack1 = helpers.unless.call(alias1,(depth0 != null ? depth0.croppedEnd : depth0),{"name":"unless","hash":{},"fn":container.program(5, data, 0),"inverse":container.noop,"data":data})) != null ? stack1 : "")
     + "\n    <div class=\""
     + alias4(((helper = (helper = helpers.CSS_PREFIX || (depth0 != null ? depth0.CSS_PREFIX : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"CSS_PREFIX","hash":{},"data":data}) : helper)))
     + "time-date-schedule-block-cover\"></div>\n</div>\n";
@@ -22719,6 +22957,7 @@ var View = __webpack_require__(/*! ../view */ "./src/js/view/view.js");
 var timeTmpl = __webpack_require__(/*! ../template/week/time.hbs */ "./src/js/view/template/week/time.hbs");
 
 var forEachArr = util.forEachArray;
+var SCHEDULE_MIN_DURATION = datetime.MILLISECONDS_SCHEDULE_MIN_DURATION;
 
 /**
  * @constructor
@@ -22812,10 +23051,25 @@ Time.prototype._getScheduleViewBoundY = function(viewModel, options) {
     var baseHeight = options.baseHeight;
     var croppedStart = false;
     var croppedEnd = false;
-    var offsetStart = viewModel.valueOf().start - options.todayStart;
+    var goingDuration = datetime.millisecondsFrom('minutes', viewModel.valueOf().goingDuration);
+    var comingDuration = datetime.millisecondsFrom('minutes', viewModel.valueOf().comingDuration);
+    var offsetStart = viewModel.valueOf().start - goingDuration - options.todayStart;
     // containerHeight : milliseconds in day = x : schedule's milliseconds
     var top = (baseHeight * offsetStart) / baseMS;
-    var height = (baseHeight * viewModel.duration()) / baseMS;
+    var modelDuration = viewModel.duration().getTime();
+    var height;
+    var duration;
+    var goingDurationHeight;
+    var modelDurationHeight;
+    var comingDurationHeight;
+
+    modelDuration = modelDuration > SCHEDULE_MIN_DURATION ? modelDuration : SCHEDULE_MIN_DURATION;
+    duration = modelDuration + goingDuration + comingDuration;
+    height = (baseHeight * duration) / baseMS;
+
+    goingDurationHeight = (baseHeight * goingDuration) / baseMS; // common.ratio(duration, goingDuration, 100);
+    modelDurationHeight = (baseHeight * modelDuration) / baseMS; // common.ratio(duration, modelDuration, 100);
+    comingDurationHeight = (baseHeight * comingDuration) / baseMS; // common.ratio(duration, comingDuration, 100);
 
     if (offsetStart < 0) {
         top = 0;
@@ -22831,6 +23085,11 @@ Time.prototype._getScheduleViewBoundY = function(viewModel, options) {
     return {
         top: top,
         height: Math.max(height, this.options.minHeight) - this.options.defaultMarginBottom,
+        modelDurationHeight: modelDurationHeight,
+        goingDurationHeight: goingDurationHeight,
+        comingDurationHeight: comingDurationHeight,
+        hasGoingDuration: goingDuration > 0,
+        hasComingDuration: comingDuration > 0,
         croppedStart: croppedStart,
         croppedEnd: croppedEnd
     };
@@ -22851,17 +23110,17 @@ Time.prototype._getScheduleViewBoundY = function(viewModel, options) {
 Time.prototype.getScheduleViewBound = function(viewModel, options) {
     var boundX = this._getScheduleViewBoundX(viewModel, options);
     var boundY = this._getScheduleViewBoundY(viewModel, options);
-    var isReadOnly = util.pick(viewModel, 'model', 'isReadOnly') || false;
+    var schedule = viewModel.model;
+    var isReadOnly = util.pick(schedule, 'isReadOnly') || false;
+    var travelBorderColor = schedule.isFocused ? '#ffffff' : schedule.borderColor;
+    if (travelBorderColor === schedule.bgColor) {
+        travelBorderColor = null; // follow text color
+    }
 
-    return {
-        top: boundY.top,
-        left: boundX.left,
-        width: boundX.width,
-        height: boundY.height,
-        croppedEnd: boundY.croppedEnd,
-        croppedStart: boundY.croppedStart,
-        isReadOnly: isReadOnly
-    };
+    return util.extend({
+        isReadOnly: isReadOnly,
+        travelBorderColor: travelBorderColor
+    }, boundX, boundY);
 };
 
 /**
