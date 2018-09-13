@@ -1,6 +1,6 @@
 /*!
  * TOAST UI Calendar
- * @version 1.8.0-sp84 | Tue Sep 11 2018
+ * @version 1.8.0-sp84-1 | Thu Sep 13 2018
  * @author NHNEnt FE Development Lab <dl_javascript@nhnent.com>
  * @license MIT
  */
@@ -19954,7 +19954,7 @@ Handlebars.registerHelper({
         var hour = parseInt(goingDuration / SIXTY_MINUTES, 10);
         var minutes = goingDuration % SIXTY_MINUTES;
 
-        return 'Travel Time ' + datetime.leadingZero(hour, 2) + ':' + datetime.leadingZero(minutes, 2);
+        return 'GoingTime ' + datetime.leadingZero(hour, 2) + ':' + datetime.leadingZero(minutes, 2);
     },
 
     'comingDuration-tmpl': function(model) {
@@ -19962,7 +19962,7 @@ Handlebars.registerHelper({
         var hour = parseInt(goingDuration / SIXTY_MINUTES, 10);
         var minutes = goingDuration % SIXTY_MINUTES;
 
-        return 'Travel Time ' + datetime.leadingZero(hour, 2) + ':' + datetime.leadingZero(minutes, 2);
+        return 'ComingTime ' + datetime.leadingZero(hour, 2) + ':' + datetime.leadingZero(minutes, 2);
     },
 
     'monthMoreTitleDate-tmpl': function(date, dayname) {
@@ -21640,11 +21640,13 @@ module.exports = (Handlebars['default'] || Handlebars).template({"1":function(co
 
   return "                <div class=\""
     + alias4(((helper = (helper = helpers.CSS_PREFIX || (depth0 != null ? depth0.CSS_PREFIX : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"CSS_PREFIX","hash":{},"data":data}) : helper)))
-    + "time-schedule-content\" style=\"height: "
+    + "time-schedule-content "
+    + alias4(((helper = (helper = helpers.CSS_PREFIX || (depth0 != null ? depth0.CSS_PREFIX : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"CSS_PREFIX","hash":{},"data":data}) : helper)))
+    + "time-schedule-content-travel-time\" style=\"height: "
     + alias4(((helper = (helper = helpers.goingDurationHeight || (depth0 != null ? depth0.goingDurationHeight : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"goingDurationHeight","hash":{},"data":data}) : helper)))
     + "px;\n"
     + ((stack1 = helpers["if"].call(alias1,((stack1 = (depth0 != null ? depth0.model : depth0)) != null ? stack1.isFocused : stack1),{"name":"if","hash":{},"fn":container.program(20, data, 0),"inverse":container.program(22, data, 0),"data":data})) != null ? stack1 : "")
-    + "                border-bottom: 1px solid "
+    + "                border-bottom: 1px dashed "
     + alias4(((helper = (helper = helpers.travelBorderColor || (depth0 != null ? depth0.travelBorderColor : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"travelBorderColor","hash":{},"data":data}) : helper)))
     + ";\">"
     + ((stack1 = (helpers["goingDuration-tmpl"] || (depth0 && depth0["goingDuration-tmpl"]) || alias2).call(alias1,(depth0 != null ? depth0.model : depth0),{"name":"goingDuration-tmpl","hash":{},"data":data})) != null ? stack1 : "")
@@ -21664,7 +21666,7 @@ module.exports = (Handlebars['default'] || Handlebars).template({"1":function(co
 },"24":function(container,depth0,helpers,partials,data) {
     var helper;
 
-  return "border-bottom: 1px solid "
+  return "border-bottom: 1px dashed "
     + container.escapeExpression(((helper = (helper = helpers.travelBorderColor || (depth0 != null ? depth0.travelBorderColor : depth0)) != null ? helper : helpers.helperMissing),(typeof helper === "function" ? helper.call(depth0 != null ? depth0 : (container.nullContext || {}),{"name":"travelBorderColor","hash":{},"data":data}) : helper)))
     + ";";
 },"26":function(container,depth0,helpers,partials,data) {
@@ -21672,7 +21674,9 @@ module.exports = (Handlebars['default'] || Handlebars).template({"1":function(co
 
   return "                <div class=\""
     + alias4(((helper = (helper = helpers.CSS_PREFIX || (depth0 != null ? depth0.CSS_PREFIX : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"CSS_PREFIX","hash":{},"data":data}) : helper)))
-    + "time-schedule-content\" style=\"height: "
+    + "time-schedule-content "
+    + alias4(((helper = (helper = helpers.CSS_PREFIX || (depth0 != null ? depth0.CSS_PREFIX : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"CSS_PREFIX","hash":{},"data":data}) : helper)))
+    + "time-schedule-content-travel-time\" style=\"height: "
     + alias4(((helper = (helper = helpers.comingDurationHeight || (depth0 != null ? depth0.comingDurationHeight : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"comingDurationHeight","hash":{},"data":data}) : helper)))
     + "px;\n"
     + ((stack1 = helpers["if"].call(alias1,((stack1 = (depth0 != null ? depth0.model : depth0)) != null ? stack1.isFocused : stack1),{"name":"if","hash":{},"fn":container.program(20, data, 0),"inverse":container.program(27, data, 0),"data":data})) != null ? stack1 : "")
@@ -21922,9 +21926,11 @@ module.exports = (Handlebars['default'] || Handlebars).template({"1":function(co
 
   return "            <div class=\""
     + alias4(((helper = (helper = helpers.CSS_PREFIX || (depth0 != null ? depth0.CSS_PREFIX : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"CSS_PREFIX","hash":{},"data":data}) : helper)))
-    + "time-schedule-content\" style=\"border-color:"
+    + "time-schedule-content "
+    + alias4(((helper = (helper = helpers.CSS_PREFIX || (depth0 != null ? depth0.CSS_PREFIX : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"CSS_PREFIX","hash":{},"data":data}) : helper)))
+    + "time-schedule-content-travel-time\" style=\"border-color:"
     + alias4(alias5(((stack1 = (depth0 != null ? depth0.model : depth0)) != null ? stack1.borderColor : stack1), depth0))
-    + "; border-bottom: 1px solid "
+    + "; border-bottom: 1px dashed "
     + alias4(alias5(((stack1 = (depth0 != null ? depth0.model : depth0)) != null ? stack1.color : stack1), depth0))
     + "; height: "
     + alias4(((helper = (helper = helpers.goingDurationHeight || (depth0 != null ? depth0.goingDurationHeight : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"goingDurationHeight","hash":{},"data":data}) : helper)))
@@ -21936,9 +21942,11 @@ module.exports = (Handlebars['default'] || Handlebars).template({"1":function(co
 
   return "            <div class=\""
     + alias4(((helper = (helper = helpers.CSS_PREFIX || (depth0 != null ? depth0.CSS_PREFIX : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"CSS_PREFIX","hash":{},"data":data}) : helper)))
-    + "time-schedule-content\" style=\"border-color:"
+    + "time-schedule-content "
+    + alias4(((helper = (helper = helpers.CSS_PREFIX || (depth0 != null ? depth0.CSS_PREFIX : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"CSS_PREFIX","hash":{},"data":data}) : helper)))
+    + "time-schedule-content-travel-time\" style=\"border-color:"
     + alias4(alias5(((stack1 = (depth0 != null ? depth0.model : depth0)) != null ? stack1.borderColor : stack1), depth0))
-    + "; border-top: 1px solid "
+    + "; border-top: 1px dashed "
     + alias4(alias5(((stack1 = (depth0 != null ? depth0.model : depth0)) != null ? stack1.color : stack1), depth0))
     + "; height: "
     + alias4(((helper = (helper = helpers.comingDurationHeight || (depth0 != null ? depth0.comingDurationHeight : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"comingDurationHeight","hash":{},"data":data}) : helper)))
