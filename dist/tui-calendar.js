@@ -1,6 +1,6 @@
 /*!
  * TOAST UI Calendar
- * @version 1.8.0-sp84-1 | Thu Sep 13 2018
+ * @version 1.8.0-sp84-2 | Wed Sep 19 2018
  * @author NHNEnt FE Development Lab <dl_javascript@nhnent.com>
  * @license MIT
  */
@@ -15715,36 +15715,36 @@ TimeMove.prototype._updateSchedule = function(scheduleData) {
         schedule = ctrl.schedules.items[modelID],
         relatedView = scheduleData.relatedView,
         currentView = scheduleData.currentView,
-        scheduleDuration,
-        dateStart,
-        dateEnd,
+        // scheduleDuration,
+        // dateStart,
+        // dateEnd,
         newStarts,
-        newEnds,
-        baseDate;
+        newEnds;
 
     if (!schedule || !currentView) {
         return;
     }
 
     timeDiff -= datetime.millisecondsFrom('minutes', 30);
-    baseDate = new TZDate(relatedView.getDate());
-    dateStart = datetime.start(baseDate);
-    dateEnd = datetime.end(baseDate);
+    // baseDate = new TZDate(relatedView.getDate());
+    // dateStart = datetime.start(baseDate);
+    // dateEnd = datetime.end(baseDate);
     newStarts = new TZDate(schedule.getStarts().getTime() + timeDiff);
     newEnds = new TZDate(schedule.getEnds().getTime() + timeDiff);
-    scheduleDuration = schedule.duration();
+    // scheduleDuration = schedule.duration();
 
     if (currentView) {
         dateDiff = currentView.getDate() - relatedView.getDate();
     }
 
-    if (newStarts < dateStart) {
-        newStarts = new TZDate(dateStart.getTime());
-        newEnds = new TZDate(newStarts.getTime() + scheduleDuration.getTime());
-    } else if (newEnds > dateEnd) {
-        newEnds = new TZDate(dateEnd.getTime());
-        newStarts = new TZDate(newEnds.getTime() - scheduleDuration.getTime());
-    }
+    // 두레이 QA로 기능 검증 후 적용 예정
+    // if (newStarts < dateStart) {
+    //     newStarts = new TZDate(dateStart.getTime());
+    //     newEnds = new TZDate(newStarts.getTime() + scheduleDuration.getTime());
+    // } else if (newEnds > dateEnd) {
+    //     newEnds = new TZDate(dateEnd.getTime());
+    //     newStarts = new TZDate(newEnds.getTime() - scheduleDuration.getTime());
+    // }
 
     newStarts = new TZDate(newStarts.getTime() + dateDiff);
     newEnds = new TZDate(newEnds.getTime() + dateDiff);
