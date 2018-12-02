@@ -8,27 +8,55 @@
       <div class="{{CSS_PREFIX}}popup-detail-date {{CSS_PREFIX}}content">{{popupDetailDate-tmpl schedule.isAllDay schedule.start schedule.end}}</div>
     </div>
     <div class="{{CSS_PREFIX}}section-detail">
-        {{#if schedule.location}}<div class="{{CSS_PREFIX}}popup-detail-item"><span class="{{CSS_PREFIX}}icon {{CSS_PREFIX}}ic-location-b"></span><span class="{{CSS_PREFIX}}content">{{popupDetailLocation-tmpl schedule}}</span></div>{{/if}}
-        {{#if schedule.attendees}}<div class="{{CSS_PREFIX}}popup-detail-item"><span class="{{CSS_PREFIX}}icon {{CSS_PREFIX}}ic-user-b"></span><span class="{{CSS_PREFIX}}content">{{popupDetailUser-tmpl schedule}}</span></div>{{/if}}
-        {{#if schedule.state}}<div class="{{CSS_PREFIX}}popup-detail-item"><span class="{{CSS_PREFIX}}icon {{CSS_PREFIX}}ic-state-b"></span><span class="{{CSS_PREFIX}}content">{{popupDetailState-tmpl schedule}}</span></div>{{/if}}
-        {{#if calendar}}
-        <div class="{{CSS_PREFIX}}popup-detail-item"><span class="{{CSS_PREFIX}}icon {{CSS_PREFIX}}calendar-dot" style="background-color: {{schedule.bgColor}}"></span><span class="{{CSS_PREFIX}}content">{{calendar.name}}</span></div>
-        {{/if}}
+      {{#if schedule.location}}
+      <div class="{{CSS_PREFIX}}popup-detail-item">
+        <span class="{{CSS_PREFIX}}icon {{CSS_PREFIX}}ic-location-b"></span>
+        <span class="{{CSS_PREFIX}}content">{{popupDetailLocation-tmpl schedule}}</span>
+      </div>
+      {{/if}}
+      {{#if schedule.raw}}
+      {{#if schedule.raw.creator}}
+      <div class="{{CSS_PREFIX}}popup-detail-item">
+        <span class="{{CSS_PREFIX}}icon {{CSS_PREFIX}}ic-user-b"></span>
+        <span class="{{CSS_PREFIX}}content">{{popupDetailUser-tmpl schedule}}</span>
+      </div>
+      {{/if}}
+      {{/if}}
+      {{#if schedule.attendees}}
+      <div class="{{CSS_PREFIX}}popup-detail-item">
+        <span class="{{CSS_PREFIX}}icon {{CSS_PREFIX}}ic-user-b"></span>
+        {{#each schedule.attendees}}
+        <span class="{{CSS_PREFIX}}content">{{this}}</span>,&nbsp;
+        {{/each}}
+      </div>
+      {{/if}}
+      {{#if schedule.state}}
+      <div class="{{CSS_PREFIX}}popup-detail-item">
+        <span class="{{CSS_PREFIX}}icon {{CSS_PREFIX}}ic-state-b"></span>
+        <span class="{{CSS_PREFIX}}content">{{popupDetailState-tmpl schedule}}</span>
+      </div>
+      {{/if}}
+      {{#if calendar}}
+      <div class="{{CSS_PREFIX}}popup-detail-item">
+        <span class="{{CSS_PREFIX}}icon {{CSS_PREFIX}}calendar-dot" style="background-color: {{schedule.bgColor}}"></span>
+        <span class="{{CSS_PREFIX}}content">{{calendar.name}}</span>
+      </div>
+      {{/if}}
     </div>
     {{#if schedule.isReadOnly}}
     {{else}}
-      {{#if schedule.detailPopup.editing}}
-        <div class="{{CSS_PREFIX}}section-button">
-          <button class="{{CSS_PREFIX}}popup-edit"><span class="{{CSS_PREFIX}}icon {{CSS_PREFIX}}ic-edit"></span><span class="{{CSS_PREFIX}}content">{{popupEdit-tmpl}}</span></button>
-          <div class="{{CSS_PREFIX}}popup-vertical-line"></div>
-          <button class="{{CSS_PREFIX}}popup-delete"><span class="{{CSS_PREFIX}}icon {{CSS_PREFIX}}ic-delete"></span><span class="{{CSS_PREFIX}}content">{{popupDelete-tmpl}}</span></button>
-        </div>
-      {{/if}}
-      {{#if schedule.detailPopup.showExternalURLButton}}
-        <div class="{{CSS_PREFIX}}section-button">
-          <a href="{{schedule.detailPopup.externalURL}}" class="{{CSS_PREFIX}}popup-edit"><span class="{{CSS_PREFIX}}content">Show Detail</span></a>
-        </div>
-      {{/if}}
+    {{#if schedule.detailPopup.editing}}
+    <div class="{{CSS_PREFIX}}section-button">
+      <button class="{{CSS_PREFIX}}popup-edit"><span class="{{CSS_PREFIX}}icon {{CSS_PREFIX}}ic-edit"></span><span class="{{CSS_PREFIX}}content">{{popupEdit-tmpl}}</span></button>
+      <div class="{{CSS_PREFIX}}popup-vertical-line"></div>
+      <button class="{{CSS_PREFIX}}popup-delete"><span class="{{CSS_PREFIX}}icon {{CSS_PREFIX}}ic-delete"></span><span class="{{CSS_PREFIX}}content">{{popupDelete-tmpl}}</span></button>
+    </div>
+    {{/if}}
+    {{#if schedule.detailPopup.showExternalURLButton}}
+    <div class="{{CSS_PREFIX}}section-button">
+      <a href="{{schedule.detailPopup.externalURL}}" class="{{CSS_PREFIX}}popup-edit"><span class="{{CSS_PREFIX}}content">Show Detail</span></a>
+    </div>
+    {{/if}}
     {{/if}}
   </div>
   <div class="{{CSS_PREFIX}}popup-top-line" style="background-color: {{schedule.bgColor}}"></div>
