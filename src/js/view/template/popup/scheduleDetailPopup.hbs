@@ -17,11 +17,18 @@
     </div>
     {{#if schedule.isReadOnly}}
     {{else}}
-    <div class="{{CSS_PREFIX}}section-button">
-      <button class="{{CSS_PREFIX}}popup-edit"><span class="{{CSS_PREFIX}}icon {{CSS_PREFIX}}ic-edit"></span><span class="{{CSS_PREFIX}}content">{{popupEdit-tmpl}}</span></button>
-      <div class="{{CSS_PREFIX}}popup-vertical-line"></div>
-      <button class="{{CSS_PREFIX}}popup-delete"><span class="{{CSS_PREFIX}}icon {{CSS_PREFIX}}ic-delete"></span><span class="{{CSS_PREFIX}}content">{{popupDelete-tmpl}}</span></button>
-    </div>
+      {{#if schedule.detailPopup.editing}}
+        <div class="{{CSS_PREFIX}}section-button">
+          <button class="{{CSS_PREFIX}}popup-edit"><span class="{{CSS_PREFIX}}icon {{CSS_PREFIX}}ic-edit"></span><span class="{{CSS_PREFIX}}content">{{popupEdit-tmpl}}</span></button>
+          <div class="{{CSS_PREFIX}}popup-vertical-line"></div>
+          <button class="{{CSS_PREFIX}}popup-delete"><span class="{{CSS_PREFIX}}icon {{CSS_PREFIX}}ic-delete"></span><span class="{{CSS_PREFIX}}content">{{popupDelete-tmpl}}</span></button>
+        </div>
+      {{/if}}
+      {{#if schedule.detailPopup.showExternalURLButton}}
+        <div class="{{CSS_PREFIX}}section-button">
+          <a href="{{schedule.detailPopup.externalURL}}" class="{{CSS_PREFIX}}popup-edit"><span class="{{CSS_PREFIX}}content">Show Detail</span></a>
+        </div>
+      {{/if}}
     {{/if}}
   </div>
   <div class="{{CSS_PREFIX}}popup-top-line" style="background-color: {{schedule.bgColor}}"></div>
