@@ -16,10 +16,12 @@
       {{/if}}
       {{#if schedule.raw}}
       {{#if schedule.raw.creator}}
+      {{#if schedule.raw.creator.name}}
       <div class="{{CSS_PREFIX}}popup-detail-item">
         <span class="{{CSS_PREFIX}}icon {{CSS_PREFIX}}ic-user-b"></span>
         <span class="{{CSS_PREFIX}}content">{{popupDetailUser-tmpl schedule}}</span>
       </div>
+      {{/if}}
       {{/if}}
       {{/if}}
       {{#if schedule.attendees}}
