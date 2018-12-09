@@ -26,10 +26,8 @@
       {{/if}}
       {{#if schedule.attendees}}
       <div class="{{CSS_PREFIX}}popup-detail-item">
-        <span class="{{CSS_PREFIX}}icon {{CSS_PREFIX}}ic-user-b"></span>
-        {{#each schedule.attendees}}
-        <span class="{{CSS_PREFIX}}content">{{this}}</span>,&nbsp;
-        {{/each}}
+        <span class="{{CSS_PREFIX}}icon {{CSS_PREFIX}}ic-users"></span>
+        <span class="{{CSS_PREFIX}}content">{{popupDetailAttendees-tmpl schedule}}</span>
       </div>
       {{/if}}
       {{#if schedule.state}}

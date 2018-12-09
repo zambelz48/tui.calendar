@@ -446,6 +446,11 @@ Handlebars.registerHelper({
 
         return creator;
     },
+    'popupDetailAttendees-tmpl': function(schedule) {
+        var attendees = util.pick(schedule, 'attendees');
+
+        return attendees.join(', ');
+    },
     'popupDetailState-tmpl': function(schedule) {
         return schedule.state || 'Busy';
     },
