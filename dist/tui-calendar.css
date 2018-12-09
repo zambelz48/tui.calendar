@@ -1,6 +1,6 @@
 /*!
  * TOAST UI Calendar
- * @version 1.8.0 | Sun Dec 02 2018
+ * @version 1.8.0 | Sun Dec 09 2018
  * @author NHNEnt FE Development Lab <dl_javascript@nhnent.com>
  * @license MIT
  */
@@ -664,9 +664,8 @@
   border-radius: 2px;
 }
 .tui-full-calendar-popup-section {
-  padding-bottom: 8px;
   font-size: 0;
-  height: 40px;
+  height: auto;
 }
 .tui-full-calendar-section-calendar {
   width: 176px;
@@ -1052,7 +1051,8 @@ input[type='checkbox'].tui-full-calendar-checkbox-round + span {
   line-height: 2;
 }
 .tui-full-calendar-popup-detail .tui-full-calendar-section-header {
-  margin-bottom: 12px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid #e5e5e5;
 }
 .tui-full-calendar-popup-detail .tui-full-calendar-schedule-title {
   font-size: 15px;
@@ -1069,7 +1069,7 @@ input[type='checkbox'].tui-full-calendar-checkbox-round + span {
   display: block;
 }
 .tui-full-calendar-popup-detail .tui-full-calendar-section-detail {
-  margin-bottom: 16px;
+  margin-bottom: 8px;
 }
 .tui-full-calendar-popup-detail .tui-full-calendar-section-button {
   border-top: 1px solid #e5e5e5;
@@ -1141,6 +1141,9 @@ input[type='checkbox'].tui-full-calendar-checkbox-round + span {
 }
 .tui-full-calendar-icon.tui-full-calendar-ic-user-b {
   background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAYAAABWdVznAAAAAXNSR0IArs4c6QAAAJpJREFUKBVjYKA1YES3wMTExBMoNgsqnnbmzJntyGqYkDlQ9qz////LgDCQD9MIV4ZNA1wSGwObhjRGRsYnIAzUkIZNE0licE+bm5tr/fnzJx1osjPQBFmoKY+BftnLwsIy8+TJk9dAYmANxsbGoUD2YiBmBwliAT+BYrFnz55dDfNDO1AAl2KQfpAcSA0DTIMyiEMAEKMG0wgAolIjcM7Tjm8AAAAASUVORK5CYII=);
+}
+.tui-full-calendar-icon.tui-full-calendar-ic-users {
+  background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAYAAABWdVznAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAACXBIWXMAAAsTAAALEwEAmpwYAAABWWlUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iWE1QIENvcmUgNS40LjAiPgogICA8cmRmOlJERiB4bWxuczpyZGY9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkvMDIvMjItcmRmLXN5bnRheC1ucyMiPgogICAgICA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0iIgogICAgICAgICAgICB4bWxuczp0aWZmPSJodHRwOi8vbnMuYWRvYmUuY29tL3RpZmYvMS4wLyI+CiAgICAgICAgIDx0aWZmOk9yaWVudGF0aW9uPjE8L3RpZmY6T3JpZW50YXRpb24+CiAgICAgIDwvcmRmOkRlc2NyaXB0aW9uPgogICA8L3JkZjpSREY+CjwveDp4bXBtZXRhPgpMwidZAAAA8ElEQVQoFXXRvW9BURjH8cv10oSY2DQx6C5iMmrT1WBoGC0l+g80TCQGo9Fk8MdYupm66yQkBh1I6/s7zrm5IZ7k4znnOS+ee6/v3UaUUhK+XfoPb4nYSYwcxwlHW3MpwUCXaE3MRNmFbn5HzxVCWQdNFPj9RBYNqA1pI4MBivDUiqKJMTb4gQu1UMcIun0IE+rzA4+XqfdCFkUBHaRg3oQe/A1f+EYLT8gjhyUOeMYKXh/qt4yZHf/ZrPoUNTuf6PZXlLDAGtfxS6GKCnbuO2jTA7pIQw+r21XbYo49gggfDIpXA7PHvVa3du+g/s3EGcy3KShiW1vjAAAAAElFTkSuQmCC);
 }
 .tui-full-calendar-icon.tui-full-calendar-ic-edit {
   background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAYAAABWdVznAAAAAXNSR0IArs4c6QAAAMdJREFUKBVjYCARMOJTb2xsLMfIyBjLysq64Pjx409BapnwaQDKzf7//3/L79+/D1tbW0uB1LJg02BmZqYIVPgdKBf/79+//UC2xs+fP8OB/H4MG0CK//79ewCkEGQYExOTI5DawMnJuQTER/EDTDFQXA4kCQQ3QBpOnz79AsJF8gMWxTA1KDTYBhyKMUwH6WSysrKSB7kZyIY5AySOVTFIggno+5VAmijFYA1AwhzEgAKcJsMUwIMVGKPH2NnZ7ZFDBKYImQYAuO5YIMgk39gAAAAASUVORK5CYII=);
